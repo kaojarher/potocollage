@@ -2,520 +2,293 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>相片拼貼工具</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
-
-  :root {
-    --bg: #0f0f11;
-    --surface: #1a1a1f;
-    --surface2: #252530;
-    --border: #2e2e3a;
-    --accent: #c8f060;
-    --accent2: #60c8f0;
-    --text: #e8e8f0;
-    --text-dim: #7a7a90;
-    --radius: 10px;
-    --gap: 4px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans TC', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: -0.5px;
-  }
-
-  .logo span { color: var(--text-dim); }
-
-  .main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    height: calc(100vh - 57px);
-  }
-
-  /* ─── Left Panel ─── */
-  .panel {
-    width: 280px;
-    min-width: 280px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .panel-section {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  /* Layout templates */
-  .layouts {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .layout-btn {
-    aspect-ratio: 1;
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    transition: all 0.15s;
-  }
-
-  .layout-btn:hover { border-color: var(--accent); }
-  .layout-btn.active { border-color: var(--accent); background: rgba(200,240,96,0.08); }
-
-  .layout-btn svg { width: 100%; height: 100%; }
-
-  /* Photo slots strip */
-  .photos-strip {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .photo-thumb {
-    position: relative;
-    aspect-ratio: 16/9;
-    background: var(--surface2);
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1.5px dashed var(--border);
-    cursor: pointer;
-    transition: border-color 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .photo-thumb:hover { border-color: var(--accent2); }
-
-  .photo-thumb img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: none;
-  }
-
-  .photo-thumb.filled img { display: block; }
-  .photo-thumb.filled .thumb-placeholder { display: none; }
-
-  .thumb-placeholder {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    color: var(--text-dim); font-size: 11px;
-  }
-
-  .thumb-remove {
-    position: absolute; top: 4px; right: 4px;
-    width: 20px; height: 20px;
-    background: rgba(0,0,0,0.7);
-    border: none; border-radius: 50%; color: #fff;
-    font-size: 12px; cursor: pointer; display: none;
-    align-items: center; justify-content: center; line-height: 1;
-  }
-
-  .photo-thumb.filled:hover .thumb-remove { display: flex; }
-
-  /* Controls */
-  .control-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-
-  .control-label { font-size: 12px; color: var(--text-dim); }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 100px; height: 3px;
-    background: var(--border);
-    border-radius: 2px; outline: none;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 13px; height: 13px;
-    background: var(--accent);
-    border-radius: 50%; cursor: pointer;
-  }
-
-  input[type=color] {
-    -webkit-appearance: none;
-    width: 32px; height: 24px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px; cursor: pointer;
-    background: none; padding: 1px;
-  }
-
-  .ratio-btns {
-    display: flex; gap: 6px; flex-wrap: wrap;
-  }
-
-  .ratio-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .ratio-btn:hover { border-color: var(--accent2); color: var(--text); }
-  .ratio-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,240,96,0.08); }
-
-  /* ─── Canvas Area ─── */
-  .canvas-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
-    overflow: auto;
-    background: repeating-conic-gradient(#1a1a22 0% 25%, #141418 0% 50%) 0 0/24px 24px;
-  }
-
-  #collage-wrapper {
-    position: relative;
-    background: #fff;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    overflow: hidden;
-    transition: width 0.3s, height 0.3s;
-  }
-
-  #collage-canvas {
-    width: 100%; height: 100%;
-    position: absolute; top: 0; left: 0;
-    pointer-events: none;
-  }
-
-  .cell {
-    position: absolute;
-    overflow: hidden;
-    cursor: pointer;
-    background: #e0e0e0;
-  }
-
-  .cell::after {
-    content: '';
-    position: absolute; inset: 0;
-    border: 1px solid rgba(255,255,255,0.3);
-    pointer-events: none;
-  }
-
-  .cell .cell-img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: none;
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-
-  .cell.has-img .cell-img { display: block; }
-
-  .cell .cell-placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 8px; color: #aaa; font-size: 13px;
-    transition: background 0.15s;
-  }
-
-  .cell.has-img .cell-placeholder { display: none; }
-
-  .cell:hover .cell-placeholder { background: rgba(0,0,0,0.04); }
-
-  .cell.drag-over .cell-placeholder { background: rgba(100,180,255,0.15); }
-
-  /* Zoom controls */
-  .cell-zoom-controls {
-    position: absolute; bottom: 6px; right: 6px;
-    display: none; gap: 4px; z-index: 10;
-  }
-
-  .cell.has-img:hover .cell-zoom-controls { display: flex; }
-
-  .zoom-btn {
-    width: 24px; height: 24px;
-    background: rgba(0,0,0,0.6);
-    border: none; border-radius: 4px;
-    color: #fff; font-size: 14px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background 0.1s;
-  }
-
-  .zoom-btn:hover { background: rgba(0,0,0,0.85); }
-
-  /* ─── Bottom toolbar ─── */
-  .bottom-bar {
-    padding: 14px 24px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-  }
-
-  .btn {
-    padding: 8px 20px;
-    border-radius: 6px;
-    border: none;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'Noto Sans TC', sans-serif;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #111;
-  }
-
-  .btn-primary:hover { background: #d8ff70; transform: translateY(-1px); }
-
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-  }
-
-  .btn-secondary:hover { border-color: var(--accent2); }
-
-  .upload-all-btn {
-    background: var(--surface2);
-    color: var(--accent2);
-    border: 1.5px solid var(--accent2);
-  }
-
-  .upload-all-btn:hover { background: rgba(96,200,240,0.1); }
-
-  .spacer { flex: 1; }
-
-  /* hidden file input */
-  #file-input { display: none; }
-
-  /* ─── Drag ghost ─── */
-  .drag-ghost {
-    position: fixed; pointer-events: none;
-    width: 80px; height: 60px; object-fit: cover;
-    border-radius: 4px; opacity: 0.8;
-    transform: translate(-50%, -50%);
-    display: none; z-index: 9999;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  .size-display {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  /* ─── Mobile Panel Toggle Button ─── */
-  .panel-toggle {
-    display: none;
-    align-items: center; justify-content: center;
-    width: 36px; height: 36px;
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer; color: var(--text);
-    font-size: 18px; flex-shrink: 0;
-    transition: border-color 0.15s;
-  }
-  .panel-toggle:hover { border-color: var(--accent); }
-
-  /* ─── Tablet (769–1024px) ─── */
-  @media (max-width: 1024px) {
-    .panel {
-      width: 220px;
-      min-width: 220px;
-    }
-    .layouts {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-    }
-    .canvas-area { padding: 20px; }
-  }
-
-  /* ─── Mobile (≤768px) ─── */
-  @media (max-width: 768px) {
-    header { padding: 12px 16px; }
-    .logo { font-size: 15px; }
-
-    .panel-toggle { display: flex; }
-
-    .main {
-      flex-direction: column;
-      height: calc(100vh - 52px - 56px); /* header + bottom-bar */
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Panel becomes a slide-up drawer */
-    .panel {
-      position: fixed;
-      bottom: 56px; left: 0; right: 0;
-      width: 100%;
-      min-width: unset;
-      height: 65vh;
-      max-height: 65vh;
-      border-right: none;
-      border-top: 2px solid var(--accent);
-      border-radius: 16px 16px 0 0;
-      z-index: 100;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
-    }
-
-    .panel.open { transform: translateY(0); }
-
-    /* Drawer handle */
-    .panel::before {
-      content: '';
-      display: block;
-      width: 40px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 10px auto 4px;
-      flex-shrink: 0;
-    }
-
-    /* Panel inner scroll area for mobile */
-    .panel-inner {
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    /* Canvas takes full space */
-    .canvas-area {
-      flex: 1;
-      padding: 16px;
-      overflow: auto;
-      width: 100%;
-    }
-
-    /* Overlay when panel open */
-    .panel-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 99;
-    }
-    .panel-overlay.show { display: block; }
-
-    /* Bottom bar stacks on small screens */
-    .bottom-bar {
-      padding: 10px 12px;
-      gap: 8px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-    }
-
-    .btn { padding: 7px 12px; font-size: 12px; white-space: nowrap; }
-    .size-display { display: none; }
-
-    /* Photo strip becomes horizontal scroll on mobile */
-    .photos-strip {
-      flex-direction: row;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-
-    .photo-thumb {
-      min-width: 100px;
-      aspect-ratio: 16/9;
-      flex-shrink: 0;
-    }
-
-    /* Layouts grid wider on mobile */
-    .layouts { grid-template-columns: repeat(6, 1fr); }
-
-    /* Control row range full width */
-    input[type=range] { width: 140px; }
-  }
-
-  /* ─── Very small screens (≤480px) ─── */
-  @media (max-width: 480px) {
-    .layouts { grid-template-columns: repeat(4, 1fr); }
-    .canvas-area { padding: 10px; }
-    .bottom-bar { padding: 8px 10px; gap: 6px; }
-    .btn { padding: 6px 10px; font-size: 11px; }
-  }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@700&display=swap');
+
+:root {
+  --bg: #0f0f11;
+  --surface: #1a1a1f;
+  --surface2: #252530;
+  --border: #2e2e3a;
+  --accent: #c8f060;
+  --accent2: #60c8f0;
+  --text: #e8e8f0;
+  --text-dim: #7a7a90;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans TC', sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ════════ SHARED ════════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #111; }
+.btn-primary:active { background: #b8e050; transform: scale(0.97); }
+.btn-ghost { background: transparent; color: var(--text-dim); border: 1.5px solid var(--border); }
+.btn-ghost:active { border-color: var(--accent2); color: var(--text); }
+.section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px;
+}
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 3px;
+  background: var(--border); border-radius: 2px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  background: var(--accent); border-radius: 50%; cursor: pointer;
+}
+input[type=color] {
+  -webkit-appearance: none; width: 32px; height: 28px;
+  border: 1.5px solid var(--border); border-radius: 6px;
+  cursor: pointer; background: none; padding: 2px;
+}
+#file-input { display: none; }
+
+/* Collage cells (shared) */
+#collage-wrapper, #m-collage-wrapper {
+  position: relative; background: #fff;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5); overflow: hidden;
+}
+.cell {
+  position: absolute; overflow: hidden; cursor: pointer; background: #ddd;
+}
+.cell::after {
+  content: ''; position: absolute; inset: 0;
+  border: 1px solid rgba(255,255,255,0.25); pointer-events: none;
+}
+.cell-img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: none; user-select: none; -webkit-user-drag: none;
+}
+.cell.has-img .cell-img { display: block; }
+.cell-ph {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  color: #bbb; font-size: 12px; transition: background 0.12s;
+}
+.cell.has-img .cell-ph { display: none; }
+.cell:hover .cell-ph { background: rgba(0,0,0,0.05); }
+.cell.drag-over .cell-ph { background: rgba(96,200,240,0.15); }
+.cell-zoom { position: absolute; bottom: 5px; right: 5px; display: none; gap: 3px; z-index: 10; }
+.cell.has-img:hover .cell-zoom { display: flex; }
+.zoom-btn {
+  width: 22px; height: 22px; background: rgba(0,0,0,0.65);
+  border: none; border-radius: 4px; color: #fff; font-size: 13px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* ════════ DESKTOP (>768px) ════════ */
+.desktop-header {
+  padding: 14px 24px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
+}
+.logo { font-family: 'Space Mono', monospace; font-size: 16px; color: var(--accent); }
+.logo span { color: var(--text-dim); }
+.desktop-main { display: flex; flex: 1; overflow: hidden; }
+.sidebar {
+  width: 272px; min-width: 272px; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto;
+}
+.sidebar-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.layout-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
+.layout-btn {
+  aspect-ratio: 1; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 6px; cursor: pointer; padding: 5px; transition: all 0.15s;
+}
+.layout-btn:hover { border-color: var(--accent); }
+.layout-btn.active { border-color: var(--accent); background: rgba(200,240,96,0.1); }
+.layout-btn svg { width: 100%; height: 100%; }
+.ratio-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.ratio-btn {
+  padding: 4px 9px; font-size: 11px; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer;
+}
+.ratio-btn:hover { border-color: var(--accent2); color: var(--text); }
+.ratio-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,240,96,0.08); }
+.ctrl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.ctrl-label { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+.ctrl-row input[type=range] { width: 110px; }
+.photo-strip { display: flex; flex-direction: column; gap: 7px; }
+.photo-thumb {
+  position: relative; aspect-ratio: 16/9; background: var(--surface2);
+  border-radius: 6px; overflow: hidden; border: 1.5px dashed var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.photo-thumb:hover { border-color: var(--accent2); }
+.photo-thumb img { width:100%; height:100%; object-fit:cover; display:none; }
+.photo-thumb.filled img { display: block; }
+.photo-thumb.filled .thumb-ph { display: none; }
+.thumb-ph { display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-dim); font-size:10px; }
+.thumb-rm {
+  position:absolute; top:4px; right:4px; width:18px; height:18px;
+  background:rgba(0,0,0,0.7); border:none; border-radius:50%; color:#fff;
+  font-size:11px; cursor:pointer; display:none; align-items:center; justify-content:center;
+}
+.photo-thumb.filled:hover .thumb-rm { display: flex; }
+.canvas-area {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 28px; overflow: auto;
+  background: repeating-conic-gradient(#1a1a22 0% 25%, #141418 0% 50%) 0 0/24px 24px;
+}
+.desktop-bottom {
+  padding: 12px 22px; background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.size-tag { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); }
+.spacer { flex: 1; }
+
+/* ════════ MOBILE (≤768px) ════════ */
+.mobile-ui { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+/* Step indicator */
+.step-bar {
+  display: flex; align-items: center; padding: 14px 20px 6px; gap: 0; flex-shrink: 0;
+}
+.step-dot {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surface2); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-dim); transition: all 0.25s; flex-shrink: 0;
+}
+.step-dot.active { background: var(--accent); border-color: var(--accent); color: #111; }
+.step-dot.done { background: rgba(200,240,96,0.12); border-color: var(--accent); color: var(--accent); }
+.step-line { flex:1; height:2px; background: var(--border); margin:0 5px; transition: background 0.3s; }
+.step-line.done { background: var(--accent); }
+.step-labels { display:flex; padding:4px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink:0; }
+.step-label-item { flex:1; text-align:center; font-size:10px; color:var(--text-dim); transition:color 0.2s; }
+.step-label-item.active { color:var(--accent); font-weight:700; }
+
+/* Steps */
+.steps-wrap { flex:1; overflow:hidden; position:relative; }
+.step-panel {
+  position:absolute; inset:0; overflow-y:auto; padding:16px 16px 8px;
+  opacity:0; pointer-events:none; transform:translateX(24px); transition:opacity 0.22s,transform 0.22s;
+}
+.step-panel.active { opacity:1; pointer-events:auto; transform:translateX(0); }
+.step-panel.exit-left { transform:translateX(-24px); opacity:0; }
+
+/* Step 1: Layout grid */
+.m-layout-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.m-layout-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.m-layout-btn {
+  width:100%; aspect-ratio:1; background:var(--surface2);
+  border:2px solid var(--border); border-radius:12px;
+  cursor:pointer; padding:10px; transition:all 0.15s;
+}
+.m-layout-btn:active { transform:scale(0.93); }
+.m-layout-btn.active {
+  border-color:var(--accent); background:rgba(200,240,96,0.1);
+  box-shadow:0 0 0 3px rgba(200,240,96,0.18);
+}
+.m-layout-btn svg { width:100%; height:100%; }
+.m-layout-name { font-size:10px; color:var(--text-dim); }
+
+/* Step 2: Photo slots */
+.photo-slots { display:flex; flex-direction:column; gap:10px; }
+.photo-slot {
+  position:relative; height:88px; background:var(--surface2);
+  border-radius:12px; overflow:hidden; border:2px dashed var(--border);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:border-color 0.15s, transform 0.1s;
+}
+.photo-slot:active { transform:scale(0.98); border-color:var(--accent2); }
+.photo-slot img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.photo-slot.filled img { display:block; }
+.photo-slot.filled .slot-ph { display:none; }
+.slot-ph { display:flex; align-items:center; gap:10px; color:var(--text-dim); font-size:13px; pointer-events:none; }
+.slot-badge {
+  position:absolute; top:7px; left:9px;
+  font-size:10px; font-weight:700; color:rgba(255,255,255,0.8);
+  background:rgba(0,0,0,0.45); padding:2px 7px; border-radius:5px;
+}
+.slot-rm {
+  position:absolute; top:7px; right:9px; width:26px; height:26px;
+  background:rgba(0,0,0,0.65); border:none; border-radius:50%; color:#fff;
+  font-size:15px; cursor:pointer; display:none; align-items:center; justify-content:center;
+}
+.photo-slot.filled .slot-rm { display:flex; }
+.slot-zoom { position:absolute; bottom:7px; right:9px; display:none; gap:5px; }
+.photo-slot.filled .slot-zoom { display:flex; }
+.slot-zm-btn {
+  width:28px; height:28px; background:rgba(0,0,0,0.65);
+  border:none; border-radius:6px; color:#fff; font-size:16px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+
+/* Step 3: Preview + export */
+.preview-box { display:flex; justify-content:center; margin-bottom:16px; }
+#m-collage-wrapper { transition: width 0.2s, height 0.2s; }
+.m-ratio-row { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
+.m-ratio-btn {
+  padding:6px 13px; font-size:12px; background:var(--surface2);
+  border:1.5px solid var(--border); border-radius:7px; color:var(--text-dim); cursor:pointer;
+}
+.m-ratio-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(200,240,96,0.08); }
+.style-options { display:flex; flex-direction:column; gap:13px; }
+.style-row { display:flex; align-items:center; gap:12px; }
+.style-row .ctrl-label { flex-shrink:0; font-size:13px; color:var(--text-dim); width:36px; }
+
+/* Mobile bottom bar */
+.m-bottom {
+  padding: 10px 14px env(safe-area-inset-bottom, 10px);
+  background:var(--surface); border-top:1px solid var(--border);
+  display:flex; gap:8px; flex-shrink:0;
+}
+.m-bottom .btn { flex:1; padding:13px 8px; font-size:14px; border-radius:12px; }
+.m-btn-back { background:var(--surface2); color:var(--text); border:1.5px solid var(--border); }
+.m-btn-next { background:var(--accent); color:#111; font-weight:700; }
+.m-btn-dl { background:var(--accent); color:#111; font-weight:700; font-size:15px; }
+
+/* Responsive switch */
+@media (max-width: 768px) {
+  .desktop-header, .desktop-main, .desktop-bottom { display:none !important; }
+  .mobile-ui { display:flex; }
+}
+@media (min-width: 769px) {
+  .mobile-ui { display:none !important; }
+  .desktop-header, .desktop-main, .desktop-bottom { display:flex; }
+}
+@media (max-width:1024px) and (min-width:769px) {
+  .sidebar { width:230px; min-width:230px; }
+  .canvas-area { padding:18px; }
+}
+
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 </style>
 </head>
 <body>
 
-<header>
-  <button class="panel-toggle" id="panel-toggle" aria-label="開啟設定">⚙</button>
+<!-- ══════ DESKTOP ══════ -->
+<header class="desktop-header">
   <div class="logo">COLLAGE<span>/maker</span></div>
 </header>
-<div class="panel-overlay" id="panel-overlay"></div>
 
-<div class="main">
-  <!-- Left Panel -->
-  <div class="panel" id="panel">
-  <div class="panel-inner">
-
-    <!-- Layout -->
-    <div class="panel-section">
-      <div class="section-title">版面配置</div>
-      <div class="layouts" id="layouts">
-        <!-- Generated by JS -->
-      </div>
+<div class="desktop-main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="section-label">版面配置</div>
+      <div class="layout-grid" id="d-layouts"></div>
     </div>
-
-    <!-- Aspect Ratio -->
-    <div class="panel-section">
-      <div class="section-title">畫布比例</div>
-      <div class="ratio-btns" id="ratio-btns">
+    <div class="sidebar-section">
+      <div class="section-label">畫布比例</div>
+      <div class="ratio-row" id="d-ratios">
         <button class="ratio-btn active" data-w="4" data-h="3">4:3</button>
         <button class="ratio-btn" data-w="16" data-h="9">16:9</button>
         <button class="ratio-btn" data-w="1" data-h="1">1:1</button>
@@ -524,477 +297,420 @@
         <button class="ratio-btn" data-w="2" data-h="3">2:3</button>
       </div>
     </div>
-
-    <!-- Gap -->
-    <div class="panel-section">
-      <div class="control-row">
-        <span class="control-label">間距</span>
-        <input type="range" id="gap-slider" min="0" max="20" value="4">
-      </div>
-      <!-- Border radius -->
-      <div class="control-row">
-        <span class="control-label">圓角</span>
-        <input type="range" id="radius-slider" min="0" max="30" value="0">
-      </div>
-      <!-- Background -->
-      <div class="control-row">
-        <span class="control-label">背景色</span>
-        <input type="color" id="bg-color" value="#ffffff">
-      </div>
+    <div class="sidebar-section">
+      <div class="ctrl-row"><span class="ctrl-label">間距</span><input type="range" id="d-gap" min="0" max="20" value="4" style="width:110px"></div>
+      <div class="ctrl-row"><span class="ctrl-label">圓角</span><input type="range" id="d-radius" min="0" max="30" value="0" style="width:110px"></div>
+      <div class="ctrl-row" style="margin-bottom:0"><span class="ctrl-label">背景色</span><input type="color" id="d-bgcolor" value="#ffffff"></div>
     </div>
-
-    <!-- Photos -->
-    <div class="panel-section" style="flex:1">
-      <div class="section-title">已上傳相片</div>
-      <div class="photos-strip" id="photos-strip"></div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="section-label">已上傳相片</div>
+      <div class="photo-strip" id="d-strip"></div>
     </div>
-
-  </div>
   </div>
 
-  <!-- Canvas -->
-  <div class="canvas-area" id="canvas-area">
-    <div id="collage-wrapper">
-      <!-- cells injected by JS -->
+  <div style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="canvas-area" id="d-canvas-area">
+      <div id="collage-wrapper"></div>
     </div>
   </div>
 </div>
 
-<!-- Bottom bar -->
-<div class="bottom-bar">
-  <button class="btn upload-all-btn" id="upload-btn">📁 上傳相片</button>
-  <input type="file" id="file-input" accept="image/*" multiple>
+<div class="desktop-bottom">
+  <button class="btn btn-ghost" id="d-upload">📁 上傳相片</button>
   <div class="spacer"></div>
-  <span class="size-display" id="size-display">800 × 600 px</span>
-  <button class="btn btn-secondary" id="clear-btn">清除全部</button>
-  <button class="btn btn-primary" id="download-btn">⬇ 下載拼貼</button>
+  <span class="size-tag" id="d-size">—</span>
+  <button class="btn btn-ghost" id="d-clear">清除</button>
+  <button class="btn btn-primary" id="d-download">⬇ 下載</button>
 </div>
 
-<img class="drag-ghost" id="drag-ghost">
+<!-- ══════ MOBILE ══════ -->
+<div class="mobile-ui">
+  <div class="step-bar">
+    <div class="step-dot active" id="sd-1">1</div>
+    <div class="step-line" id="sl-1"></div>
+    <div class="step-dot" id="sd-2">2</div>
+    <div class="step-line" id="sl-2"></div>
+    <div class="step-dot" id="sd-3">3</div>
+  </div>
+  <div class="step-labels">
+    <div class="step-label-item active" id="slb-1">選版型</div>
+    <div class="step-label-item" id="slb-2">選相片</div>
+    <div class="step-label-item" id="slb-3">預覽匯出</div>
+  </div>
+
+  <div class="steps-wrap">
+
+    <!-- Step 1 -->
+    <div class="step-panel active" id="m-step-1">
+      <div class="section-label" style="margin-bottom:14px">選擇拼貼版型</div>
+      <div class="m-layout-grid" id="m-layouts"></div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-panel" id="m-step-2">
+      <div class="section-label">點擊格子上傳相片</div>
+      <div style="font-size:11px;color:var(--text-dim);margin:4px 0 14px">此版型需 <strong id="m-slot-count" style="color:var(--accent)">1</strong> 張相片</div>
+      <div class="photo-slots" id="m-slots"></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-panel" id="m-step-3">
+      <div class="section-label" style="margin-bottom:12px">預覽與下載</div>
+      <div class="preview-box"><div id="m-collage-wrapper"></div></div>
+      <div class="section-label" style="margin-bottom:10px">比例</div>
+      <div class="m-ratio-row" id="m-ratios">
+        <button class="m-ratio-btn active" data-w="4" data-h="3">4:3</button>
+        <button class="m-ratio-btn" data-w="16" data-h="9">16:9</button>
+        <button class="m-ratio-btn" data-w="1" data-h="1">1:1</button>
+        <button class="m-ratio-btn" data-w="3" data-h="4">3:4</button>
+        <button class="m-ratio-btn" data-w="9" data-h="16">9:16</button>
+      </div>
+      <div class="section-label" style="margin-bottom:10px">樣式</div>
+      <div class="style-options">
+        <div class="style-row"><span class="ctrl-label">間距</span><input type="range" id="m-gap" min="0" max="20" value="4"></div>
+        <div class="style-row"><span class="ctrl-label">圓角</span><input type="range" id="m-radius" min="0" max="30" value="0"></div>
+        <div class="style-row"><span class="ctrl-label">背景</span><input type="color" id="m-bgcolor" value="#ffffff"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="m-bottom">
+    <button class="btn m-btn-back" id="m-back" style="display:none;flex:0.6">← 返回</button>
+    <button class="btn m-btn-next" id="m-next">選相片 →</button>
+    <button class="btn m-btn-dl" id="m-download" style="display:none">⬇ 下載拼貼</button>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="image/*" multiple>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
 const state = {
-  layout: 0,
-  ratio: { w: 4, h: 3 },
-  gap: 4,
-  radius: 0,
-  bgColor: '#ffffff',
-  images: [],      // { src, scale, offsetX, offsetY } per cell
-  cellCount: 0,
-  draggingFrom: null,  // panel thumb index
+  layout: 0, ratio: {w:4,h:3}, gap:4, radius:0, bgColor:'#ffffff',
+  images: [], cellCount:0, _targetCell:undefined, _targetMode:'desktop',
 };
 
-const CANVAS_MAX = 700;
-
-// ─── Dynamic canvas max based on viewport ─────────────────────────────────────
-function getCanvasMax() {
-  const isMobile = window.innerWidth <= 768;
-  const isTablet = window.innerWidth <= 1024;
-  const canvasArea = document.getElementById('canvas-area');
-  const areaW = canvasArea ? canvasArea.clientWidth - (isMobile ? 32 : 64) : CANVAS_MAX;
-  const areaH = canvasArea ? canvasArea.clientHeight - (isMobile ? 32 : 64) : CANVAS_MAX;
-  const maxDim = Math.min(areaW, areaH, isMobile ? 480 : isTablet ? 560 : 700);
-  return Math.max(200, maxDim);
-}
-
-// ─── Mobile Panel Toggle ──────────────────────────────────────────────────────
-const panelEl = document.getElementById('panel');
-const overlayEl = document.getElementById('panel-overlay');
-const toggleBtn = document.getElementById('panel-toggle');
-
-function openPanel() {
-  panelEl.classList.add('open');
-  overlayEl.classList.add('show');
-  toggleBtn.textContent = '✕';
-}
-function closePanel() {
-  panelEl.classList.remove('open');
-  overlayEl.classList.remove('show');
-  toggleBtn.textContent = '⚙';
-}
-
-toggleBtn.addEventListener('click', () => {
-  panelEl.classList.contains('open') ? closePanel() : openPanel();
-});
-overlayEl.addEventListener('click', closePanel);
-
-// Close panel after selecting layout/ratio on mobile
-document.getElementById('layouts').addEventListener('click', () => {
-  if (window.innerWidth <= 768) setTimeout(closePanel, 300);
-});
-document.getElementById('ratio-btns').addEventListener('click', () => {
-  if (window.innerWidth <= 768) setTimeout(closePanel, 300);
-});
-
-// Recalculate canvas on resize
-window.addEventListener('resize', () => {
-  renderCollage();
-});
-
-// ─── Layout Definitions ───────────────────────────────────────────────────────
-// Each layout = array of cells: { x, y, w, h } (0–1 fractions)
 const LAYOUTS = [
-  // 1-up
-  { name:'1', cells:[{x:0,y:0,w:1,h:1}] },
-  // 2 side by side
-  { name:'2H', cells:[{x:0,y:0,w:.5,h:1},{x:.5,y:0,w:.5,h:1}] },
-  // 2 top-bottom
-  { name:'2V', cells:[{x:0,y:0,w:1,h:.5},{x:0,y:.5,w:1,h:.5}] },
-  // 3 left big + 2 right
-  { name:'3A', cells:[{x:0,y:0,w:.5,h:1},{x:.5,y:0,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}] },
-  // 3 top big + 2 bottom
-  { name:'3B', cells:[{x:0,y:0,w:1,h:.5},{x:0,y:.5,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}] },
-  // 3 equal columns
-  { name:'3C', cells:[{x:0,y:0,w:1/3,h:1},{x:1/3,y:0,w:1/3,h:1},{x:2/3,y:0,w:1/3,h:1}] },
-  // 4 grid
-  { name:'4', cells:[{x:0,y:0,w:.5,h:.5},{x:.5,y:0,w:.5,h:.5},{x:0,y:.5,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}] },
-  // 4 left big
-  { name:'4L', cells:[{x:0,y:0,w:.6,h:1},{x:.6,y:0,w:.4,h:1/3},{x:.6,y:1/3,w:.4,h:1/3},{x:.6,y:2/3,w:.4,h:1/3}] },
-  // 5 magazine
-  { name:'5', cells:[{x:0,y:0,w:.5,h:.5},{x:.5,y:0,w:.5,h:.5},{x:0,y:.5,w:1/3,h:.5},{x:1/3,y:.5,w:1/3,h:.5},{x:2/3,y:.5,w:1/3,h:.5}] },
-  // 6 grid
-  { name:'6', cells:[{x:0,y:0,w:1/3,h:.5},{x:1/3,y:0,w:1/3,h:.5},{x:2/3,y:0,w:1/3,h:.5},{x:0,y:.5,w:1/3,h:.5},{x:1/3,y:.5,w:1/3,h:.5},{x:2/3,y:.5,w:1/3,h:.5}] },
-  // diagonal big left
-  { name:'DL', cells:[{x:0,y:0,w:.6,h:.6},{x:.6,y:0,w:.4,h:.6},{x:0,y:.6,w:.4,h:.4},{x:.4,y:.6,w:.6,h:.4}] },
-  // 3 rows unequal
-  { name:'3R', cells:[{x:0,y:0,w:1,h:.4},{x:0,y:.4,w:.5,h:.6},{x:.5,y:.4,w:.5,h:.6}] },
+  {name:'1格',   cells:[{x:0,y:0,w:1,h:1}]},
+  {name:'左右2', cells:[{x:0,y:0,w:.5,h:1},{x:.5,y:0,w:.5,h:1}]},
+  {name:'上下2', cells:[{x:0,y:0,w:1,h:.5},{x:0,y:.5,w:1,h:.5}]},
+  {name:'左大3', cells:[{x:0,y:0,w:.55,h:1},{x:.55,y:0,w:.45,h:.5},{x:.55,y:.5,w:.45,h:.5}]},
+  {name:'上大3', cells:[{x:0,y:0,w:1,h:.5},{x:0,y:.5,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}]},
+  {name:'三欄',  cells:[{x:0,y:0,w:1/3,h:1},{x:1/3,y:0,w:1/3,h:1},{x:2/3,y:0,w:1/3,h:1}]},
+  {name:'四宮格',cells:[{x:0,y:0,w:.5,h:.5},{x:.5,y:0,w:.5,h:.5},{x:0,y:.5,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}]},
+  {name:'左大4', cells:[{x:0,y:0,w:.6,h:1},{x:.6,y:0,w:.4,h:1/3},{x:.6,y:1/3,w:.4,h:1/3},{x:.6,y:2/3,w:.4,h:1/3}]},
+  {name:'5格',   cells:[{x:0,y:0,w:.5,h:.5},{x:.5,y:0,w:.5,h:.5},{x:0,y:.5,w:1/3,h:.5},{x:1/3,y:.5,w:1/3,h:.5},{x:2/3,y:.5,w:1/3,h:.5}]},
+  {name:'六宮格',cells:[{x:0,y:0,w:1/3,h:.5},{x:1/3,y:0,w:1/3,h:.5},{x:2/3,y:0,w:1/3,h:.5},{x:0,y:.5,w:1/3,h:.5},{x:1/3,y:.5,w:1/3,h:.5},{x:2/3,y:.5,w:1/3,h:.5}]},
+  {name:'交錯4', cells:[{x:0,y:0,w:.6,h:.6},{x:.6,y:0,w:.4,h:.6},{x:0,y:.6,w:.4,h:.4},{x:.4,y:.6,w:.6,h:.4}]},
+  {name:'橫幅3', cells:[{x:0,y:0,w:1,h:.38},{x:0,y:.38,w:.5,h:.62},{x:.5,y:.38,w:.5,h:.62}]},
 ];
 
-// SVG previews for layouts
-function layoutSVG(layout) {
-  const cells = layout.cells;
-  const rects = cells.map(c => {
-    const x = 2 + c.x * 46;
-    const y = 2 + c.y * 46;
-    const w = c.w * 46 - 1;
-    const h = c.h * 46 - 1;
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="currentColor" opacity="0.6"/>`;
+function layoutSVG(l) {
+  const rs = l.cells.map(c=>{
+    const x=2+c.x*46,y=2+c.y*46,w=c.w*46-1.5,h=c.h*46-1.5;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="var(--accent)" opacity="0.75"/>`;
   }).join('');
-  return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" style="color:var(--accent)">${rects}</svg>`;
+  return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">${rs}</svg>`;
 }
 
-// ─── Init Layout Buttons ──────────────────────────────────────────────────────
-const layoutsEl = document.getElementById('layouts');
-LAYOUTS.forEach((l, i) => {
+// ═══════════════════════════════════════════
+// DESKTOP
+// ═══════════════════════════════════════════
+const dLayoutsEl = document.getElementById('d-layouts');
+LAYOUTS.forEach((l,i) => {
   const btn = document.createElement('button');
-  btn.className = 'layout-btn' + (i === 0 ? ' active' : '');
-  btn.innerHTML = layoutSVG(l);
-  btn.title = l.name;
-  btn.onclick = () => {
-    document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.layout = i;
-    renderCollage();
+  btn.className='layout-btn'+(i===0?' active':'');
+  btn.innerHTML=layoutSVG(l); btn.title=l.name;
+  btn.onclick=()=>{
+    dLayoutsEl.querySelectorAll('.layout-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); state.layout=i;
+    syncMobileLayout(i); renderDesktop();
   };
-  layoutsEl.appendChild(btn);
+  dLayoutsEl.appendChild(btn);
 });
 
-// ─── Ratio Buttons ────────────────────────────────────────────────────────────
-document.getElementById('ratio-btns').addEventListener('click', e => {
-  const btn = e.target.closest('.ratio-btn');
-  if (!btn) return;
-  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  state.ratio = { w: +btn.dataset.w, h: +btn.dataset.h };
-  renderCollage();
+document.getElementById('d-ratios').addEventListener('click',e=>{
+  const b=e.target.closest('.ratio-btn'); if(!b)return;
+  document.querySelectorAll('#d-ratios .ratio-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.ratio={w:+b.dataset.w,h:+b.dataset.h};
+  renderDesktop();
 });
+document.getElementById('d-gap').addEventListener('input',e=>{state.gap=+e.target.value;renderDesktop();});
+document.getElementById('d-radius').addEventListener('input',e=>{state.radius=+e.target.value;renderDesktop();});
+document.getElementById('d-bgcolor').addEventListener('input',e=>{
+  state.bgColor=e.target.value;
+  document.getElementById('collage-wrapper').style.background=state.bgColor;
+});
+document.getElementById('d-upload').addEventListener('click',()=>{state._targetCell=0;state._targetMode='desktop';document.getElementById('file-input').click();});
+document.getElementById('d-clear').addEventListener('click',()=>{state.images=[];renderDesktop();});
 
-// ─── Sliders & Color ─────────────────────────────────────────────────────────
-document.getElementById('gap-slider').addEventListener('input', e => {
-  state.gap = +e.target.value;
-  renderCollage();
-});
-document.getElementById('radius-slider').addEventListener('input', e => {
-  state.radius = +e.target.value;
-  renderCollage();
-});
-document.getElementById('bg-color').addEventListener('input', e => {
-  state.bgColor = e.target.value;
-  document.getElementById('collage-wrapper').style.background = state.bgColor;
-});
-
-// ─── Canvas Sizing ────────────────────────────────────────────────────────────
-function getCanvasSize() {
-  const { w, h } = state.ratio;
-  const MAX = getCanvasMax();
-  let cw, ch;
-  if (w >= h) {
-    cw = MAX;
-    ch = Math.round(MAX * h / w);
-  } else {
-    ch = MAX;
-    cw = Math.round(MAX * w / h);
-  }
-  return { cw, ch };
+function getDMax(){
+  const a=document.getElementById('d-canvas-area'); if(!a)return 600;
+  return Math.max(200,Math.min(a.clientWidth-56,a.clientHeight-56,700));
+}
+function getDSize(){
+  const {w,h}=state.ratio,M=getDMax();
+  return w>=h?{cw:M,ch:Math.round(M*h/w)}:{cw:Math.round(M*w/h),ch:M};
 }
 
-// ─── Render Collage ───────────────────────────────────────────────────────────
-function renderCollage() {
-  const wrapper = document.getElementById('collage-wrapper');
-  const { cw, ch } = getCanvasSize();
-  wrapper.style.width = cw + 'px';
-  wrapper.style.height = ch + 'px';
-  wrapper.style.background = state.bgColor;
-  document.getElementById('size-display').textContent = `${cw} × ${ch} px`;
-
-  const layout = LAYOUTS[state.layout];
-  const gap = state.gap;
-  const radius = state.radius;
-
-  // Ensure images array has enough slots
-  while (state.images.length < layout.cells.length) {
-    state.images.push(null);
-  }
-  state.cellCount = layout.cells.length;
-
-  // Remove old cells
-  wrapper.querySelectorAll('.cell').forEach(c => c.remove());
-
-  layout.cells.forEach((cell, idx) => {
-    const el = document.createElement('div');
-    el.className = 'cell';
-
-    const x = cell.x * cw + gap / 2;
-    const y = cell.y * ch + gap / 2;
-    const w = cell.w * cw - gap;
-    const h = cell.h * ch - gap;
-
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    el.style.width = w + 'px';
-    el.style.height = h + 'px';
-    el.style.borderRadius = radius + 'px';
-
-    // Placeholder
-    const ph = document.createElement('div');
-    ph.className = 'cell-placeholder';
-    ph.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>點擊上傳</span>`;
+function renderDesktop(){
+  const wrap=document.getElementById('collage-wrapper'); if(!wrap)return;
+  const {cw,ch}=getDSize();
+  wrap.style.width=cw+'px'; wrap.style.height=ch+'px'; wrap.style.background=state.bgColor;
+  document.getElementById('d-size').textContent=`${cw} × ${ch}`;
+  const layout=LAYOUTS[state.layout];
+  while(state.images.length<layout.cells.length)state.images.push(null);
+  state.cellCount=layout.cells.length;
+  wrap.querySelectorAll('.cell').forEach(c=>c.remove());
+  layout.cells.forEach((cell,idx)=>{
+    const el=document.createElement('div'); el.className='cell';
+    const x=cell.x*cw+state.gap/2,y=cell.y*ch+state.gap/2,w=cell.w*cw-state.gap,h=cell.h*ch-state.gap;
+    Object.assign(el.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:state.radius+'px'});
+    const ph=document.createElement('div'); ph.className='cell-ph';
+    ph.innerHTML=`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>點擊上傳</span>`;
     el.appendChild(ph);
-
-    // Image
-    const img = document.createElement('img');
-    img.className = 'cell-img';
-    img.draggable = false;
-    el.appendChild(img);
-
-    // Zoom controls
-    const zc = document.createElement('div');
-    zc.className = 'cell-zoom-controls';
-    zc.innerHTML = `<button class="zoom-btn" data-dir="in">+</button><button class="zoom-btn" data-dir="out">−</button>`;
+    const img=document.createElement('img'); img.className='cell-img'; img.draggable=false; el.appendChild(img);
+    const zc=document.createElement('div'); zc.className='cell-zoom';
+    zc.innerHTML=`<button class="zoom-btn" data-dir="in">+</button><button class="zoom-btn" data-dir="out">−</button>`;
     el.appendChild(zc);
-
-    // Restore image if exists
-    const imgState = state.images[idx];
-    if (imgState) {
-      el.classList.add('has-img');
-      img.src = imgState.src;
-      img.style.transform = `scale(${imgState.scale}) translate(${imgState.offsetX}px, ${imgState.offsetY}px)`;
+    const imgSt=state.images[idx];
+    if(imgSt){el.classList.add('has-img');img.src=imgSt.src;img.style.transform=`scale(${imgSt.scale}) translate(${imgSt.offsetX}px,${imgSt.offsetY}px)`;}
+    el.dataset.idx=idx;
+    el.addEventListener('click',()=>{state._targetCell=idx;state._targetMode='desktop';document.getElementById('file-input').click();});
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('drag-over');
+      const f=+e.dataTransfer.getData('cellIdx');
+      if(!isNaN(f)){[state.images[f],state.images[idx]]=[state.images[idx],state.images[f]];renderDesktop();}
+    });
+    zc.querySelectorAll('.zoom-btn').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const s=state.images[idx];if(!s)return;
+      s.scale=Math.max(0.5,Math.min(3,s.scale+(b.dataset.dir==='in'?0.15:-0.15)));
+      img.style.transform=`scale(${s.scale}) translate(${s.offsetX}px,${s.offsetY}px)`;
+    }));
+    if(imgSt){
+      el.draggable=true;
+      el.addEventListener('dragstart',e=>{e.dataTransfer.setData('cellIdx',idx);setTimeout(()=>el.style.opacity='0.5',0);});
+      el.addEventListener('dragend',()=>el.style.opacity='1');
     }
-
-    el.dataset.idx = idx;
-
-    // Click to upload
-    el.addEventListener('click', () => {
-      state._targetCell = idx;
-      document.getElementById('file-input').click();
-    });
-
-    // Drag over (for reorder from panel)
-    el.addEventListener('dragover', e => {
-      e.preventDefault();
-      el.classList.add('drag-over');
-    });
-    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
-    el.addEventListener('drop', e => {
-      e.preventDefault();
-      el.classList.remove('drag-over');
-      const fromIdx = +e.dataTransfer.getData('cellIdx');
-      if (!isNaN(fromIdx)) {
-        swapCells(fromIdx, idx);
-      }
-    });
-
-    // Zoom btns
-    zc.querySelectorAll('.zoom-btn').forEach(b => {
-      b.addEventListener('click', e => {
-        e.stopPropagation();
-        const imgSt = state.images[idx];
-        if (!imgSt) return;
-        imgSt.scale = Math.max(0.5, Math.min(3, imgSt.scale + (b.dataset.dir === 'in' ? 0.15 : -0.15)));
-        img.style.transform = `scale(${imgSt.scale}) translate(${imgSt.offsetX}px, ${imgSt.offsetY}px)`;
-      });
-    });
-
-    // Drag to reorder
-    if (imgState) {
-      el.draggable = true;
-      el.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('cellIdx', idx);
-        setTimeout(() => el.style.opacity = '0.5', 0);
-      });
-      el.addEventListener('dragend', () => el.style.opacity = '1');
-    }
-
-    wrapper.appendChild(el);
+    wrap.appendChild(el);
   });
-
-  updatePhotoStrip();
+  renderDStrip();
 }
 
-function swapCells(a, b) {
-  [state.images[a], state.images[b]] = [state.images[b], state.images[a]];
-  renderCollage();
+function renderDStrip(){
+  const strip=document.getElementById('d-strip'); strip.innerHTML='';
+  for(let i=0;i<state.cellCount;i++){
+    const imgSt=state.images[i];
+    const th=document.createElement('div'); th.className='photo-thumb'+(imgSt?' filled':'');
+    const ph=document.createElement('div'); ph.className='thumb-ph';
+    ph.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>格子${i+1}</span>`;
+    th.appendChild(ph);
+    const img=document.createElement('img'); if(imgSt)img.src=imgSt.src; th.appendChild(img);
+    const rm=document.createElement('button'); rm.className='thumb-rm'; rm.textContent='✕';
+    rm.addEventListener('click',e=>{e.stopPropagation();state.images[i]=null;renderDesktop();});
+    th.appendChild(rm);
+    th.addEventListener('click',()=>{state._targetCell=i;state._targetMode='desktop';document.getElementById('file-input').click();});
+    if(imgSt){th.draggable=true;th.addEventListener('dragstart',e=>e.dataTransfer.setData('cellIdx',i));}
+    strip.appendChild(th);
+  }
 }
 
-// ─── File Upload ─────────────────────────────────────────────────────────────
-document.getElementById('file-input').addEventListener('change', e => {
-  const files = [...e.target.files];
-  files.forEach((file, fi) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const src = ev.target.result;
-      const targetIdx = state._targetCell !== undefined ? state._targetCell + fi : fi;
-      if (targetIdx < state.cellCount) {
-        state.images[targetIdx] = { src, scale: 1, offsetX: 0, offsetY: 0 };
-      } else {
-        // append to first empty slot
-        for (let i = 0; i < state.cellCount; i++) {
-          if (!state.images[i]) { state.images[i] = { src, scale: 1, offsetX: 0, offsetY: 0 }; break; }
-        }
+// ═══════════════════════════════════════════
+// MOBILE WIZARD
+// ═══════════════════════════════════════════
+let mStep=1;
+
+// Build mobile layout buttons
+const mLayoutsEl=document.getElementById('m-layouts');
+LAYOUTS.forEach((l,i)=>{
+  const wrap=document.createElement('div'); wrap.className='m-layout-wrap';
+  const btn=document.createElement('button');
+  btn.className='m-layout-btn'+(i===0?' active':'');
+  btn.innerHTML=layoutSVG(l);
+  btn.addEventListener('click',()=>{
+    mLayoutsEl.querySelectorAll('.m-layout-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); state.layout=i;
+    syncDesktopLayout(i);
+  });
+  const nm=document.createElement('div'); nm.className='m-layout-name'; nm.textContent=l.name;
+  wrap.appendChild(btn); wrap.appendChild(nm); mLayoutsEl.appendChild(wrap);
+});
+
+document.getElementById('m-ratios').addEventListener('click',e=>{
+  const b=e.target.closest('.m-ratio-btn'); if(!b)return;
+  document.querySelectorAll('#m-ratios .m-ratio-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.ratio={w:+b.dataset.w,h:+b.dataset.h};
+  renderMPreview();
+});
+document.getElementById('m-gap').addEventListener('input',e=>{state.gap=+e.target.value;renderMPreview();});
+document.getElementById('m-radius').addEventListener('input',e=>{state.radius=+e.target.value;renderMPreview();});
+document.getElementById('m-bgcolor').addEventListener('input',e=>{state.bgColor=e.target.value;renderMPreview();});
+
+function getMSize(){
+  const maxW=Math.min(window.innerWidth-32,360);
+  const {w,h}=state.ratio;
+  return w>=h?{cw:maxW,ch:Math.round(maxW*h/w)}:{cw:Math.round(maxW*w/h),ch:Math.min(maxW,Math.round(maxW*h/w))};
+}
+
+function renderMPreview(){
+  const wrap=document.getElementById('m-collage-wrapper'); if(!wrap)return;
+  const {cw,ch}=getMSize();
+  wrap.style.width=cw+'px'; wrap.style.height=ch+'px'; wrap.style.background=state.bgColor;
+  const layout=LAYOUTS[state.layout];
+  while(state.images.length<layout.cells.length)state.images.push(null);
+  wrap.querySelectorAll('.cell').forEach(c=>c.remove());
+  layout.cells.forEach((cell,idx)=>{
+    const el=document.createElement('div'); el.className='cell';
+    const x=cell.x*cw+state.gap/2,y=cell.y*ch+state.gap/2,w=cell.w*cw-state.gap,h=cell.h*ch-state.gap;
+    Object.assign(el.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:state.radius+'px',cursor:'default'});
+    const img=document.createElement('img'); img.className='cell-img'; img.draggable=false; el.appendChild(img);
+    const ph=document.createElement('div'); ph.className='cell-ph';
+    ph.innerHTML=`<span style="font-size:11px;color:#ccc">${idx+1}</span>`; el.appendChild(ph);
+    const imgSt=state.images[idx];
+    if(imgSt){el.classList.add('has-img');img.src=imgSt.src;img.style.transform=`scale(${imgSt.scale})`;}
+    wrap.appendChild(el);
+  });
+}
+
+function renderMSlots(){
+  const layout=LAYOUTS[state.layout];
+  const count=layout.cells.length;
+  document.getElementById('m-slot-count').textContent=count;
+  while(state.images.length<count)state.images.push(null);
+  state.cellCount=count;
+  const container=document.getElementById('m-slots'); container.innerHTML='';
+  for(let i=0;i<count;i++){
+    const imgSt=state.images[i];
+    const slot=document.createElement('div'); slot.className='photo-slot'+(imgSt?' filled':'');
+    const badge=document.createElement('div'); badge.className='slot-badge'; badge.textContent=`相片 ${i+1}`; slot.appendChild(badge);
+    const ph=document.createElement('div'); ph.className='slot-ph';
+    ph.innerHTML=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>點擊上傳相片</span>`;
+    slot.appendChild(ph);
+    const img=document.createElement('img'); if(imgSt)img.src=imgSt.src; slot.appendChild(img);
+    const rm=document.createElement('button'); rm.className='slot-rm'; rm.textContent='✕';
+    rm.addEventListener('click',e=>{e.stopPropagation();state.images[i]=null;renderMSlots();});
+    slot.appendChild(rm);
+    const zm=document.createElement('div'); zm.className='slot-zoom';
+    zm.innerHTML=`<button class="slot-zm-btn" data-dir="in">+</button><button class="slot-zm-btn" data-dir="out">−</button>`;
+    zm.querySelectorAll('.slot-zm-btn').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const s=state.images[i];if(!s)return;
+      s.scale=Math.max(0.5,Math.min(3,s.scale+(b.dataset.dir==='in'?0.2:-0.2)));
+      img.style.transform=`scale(${s.scale})`;
+    }));
+    slot.appendChild(zm);
+    slot.addEventListener('click',()=>{state._targetCell=i;state._targetMode='mobile';document.getElementById('file-input').click();});
+    container.appendChild(slot);
+  }
+}
+
+function goStep(n){
+  mStep=n;
+  [1,2,3].forEach(i=>{
+    document.getElementById(`sd-${i}`).className='step-dot'+(i<n?' done':i===n?' active':'');
+    document.getElementById(`slb-${i}`).className='step-label-item'+(i===n?' active':'');
+  });
+  [1,2].forEach(i=>document.getElementById(`sl-${i}`).className='step-line'+(i<n?' done':''));
+  document.querySelectorAll('.step-panel').forEach(p=>{
+    p.classList.remove('active','exit-left');
+    const pn=+p.id.split('-')[2];
+    if(pn===n)p.classList.add('active');
+    else if(pn<n)p.classList.add('exit-left');
+  });
+  const back=document.getElementById('m-back'),next=document.getElementById('m-next'),dl=document.getElementById('m-download');
+  back.style.display=n>1?'':'none';
+  next.style.display=n<3?'':'none';
+  dl.style.display=n===3?'':'none';
+  if(n===1)next.textContent='選相片 →';
+  if(n===2)next.textContent='預覽匯出 →';
+  if(n===2)renderMSlots();
+  if(n===3)renderMPreview();
+}
+
+document.getElementById('m-next').addEventListener('click',()=>goStep(Math.min(3,mStep+1)));
+document.getElementById('m-back').addEventListener('click',()=>goStep(Math.max(1,mStep-1)));
+
+// Sync helpers
+function syncMobileLayout(i){
+  document.querySelectorAll('.m-layout-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+}
+function syncDesktopLayout(i){
+  document.querySelectorAll('#d-layouts .layout-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+}
+
+// ═══════════════════════════════════════════
+// FILE INPUT
+// ═══════════════════════════════════════════
+document.getElementById('file-input').addEventListener('change',e=>{
+  const files=[...e.target.files];
+  files.forEach((file,fi)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const src=ev.target.result;
+      const base=state._targetCell!==undefined?state._targetCell:0;
+      const idx=Math.min(base+fi,state.cellCount-1);
+      if(state.cellCount>0){
+        state.images[idx]={src,scale:1,offsetX:0,offsetY:0};
+      }else{
+        // desktop before layout known
+        while(state.images.length<=base+fi)state.images.push(null);
+        state.images[base+fi]={src,scale:1,offsetX:0,offsetY:0};
       }
-      renderCollage();
+      if(state._targetMode==='mobile')renderMSlots();
+      else renderDesktop();
     };
     reader.readAsDataURL(file);
   });
-  state._targetCell = undefined;
-  e.target.value = '';
+  state._targetCell=undefined;
+  e.target.value='';
 });
 
-document.getElementById('upload-btn').addEventListener('click', () => {
-  state._targetCell = 0;
-  document.getElementById('file-input').click();
-});
-
-// ─── Photo Strip ─────────────────────────────────────────────────────────────
-function updatePhotoStrip() {
-  const strip = document.getElementById('photos-strip');
-  strip.innerHTML = '';
-  for (let i = 0; i < state.cellCount; i++) {
-    const imgSt = state.images[i];
-    const thumb = document.createElement('div');
-    thumb.className = 'photo-thumb' + (imgSt ? ' filled' : '');
-    thumb.dataset.idx = i;
-
-    const ph = document.createElement('div');
-    ph.className = 'thumb-placeholder';
-    ph.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>格子 ${i+1}</span>`;
-    thumb.appendChild(ph);
-
-    const img = document.createElement('img');
-    if (imgSt) img.src = imgSt.src;
-    thumb.appendChild(img);
-
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'thumb-remove';
-    removeBtn.textContent = '✕';
-    removeBtn.title = '移除';
-    removeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      state.images[i] = null;
-      renderCollage();
-    });
-    thumb.appendChild(removeBtn);
-
-    thumb.addEventListener('click', () => {
-      state._targetCell = i;
-      document.getElementById('file-input').click();
-    });
-
-    // Drag from strip
-    if (imgSt) {
-      thumb.draggable = true;
-      thumb.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('cellIdx', i);
-      });
-    }
-
-    strip.appendChild(thumb);
-  }
+// ═══════════════════════════════════════════
+// DOWNLOAD
+// ═══════════════════════════════════════════
+async function doDownload(){
+  const layout=LAYOUTS[state.layout];
+  const {w,h}=state.ratio;
+  const EXP=1400;
+  const cw=w>=h?EXP:Math.round(EXP*w/h);
+  const ch=w>=h?Math.round(EXP*h/w):EXP;
+  const canvas=document.createElement('canvas');
+  canvas.width=cw; canvas.height=ch;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle=state.bgColor; ctx.fillRect(0,0,cw,ch);
+  await Promise.all(layout.cells.map((cell,idx)=>new Promise(res=>{
+    const imgSt=state.images[idx]; if(!imgSt){res();return;}
+    const x=cell.x*cw+state.gap/2,y=cell.y*ch+state.gap/2,pw=cell.w*cw-state.gap,ph=cell.h*ch-state.gap;
+    const img=new Image();
+    img.onload=()=>{
+      ctx.save();
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(x,y,pw,ph,state.radius*2);
+      else ctx.rect(x,y,pw,ph);
+      ctx.clip();
+      const sc=imgSt.scale,dw=pw*sc,dh=ph*sc;
+      ctx.drawImage(img,x+(pw-dw)/2+imgSt.offsetX*sc,y+(ph-dh)/2+imgSt.offsetY*sc,dw,dh);
+      ctx.restore();res();
+    };
+    img.src=imgSt.src;
+  })));
+  const a=document.createElement('a'); a.download='collage.jpg'; a.href=canvas.toDataURL('image/jpeg',0.93); a.click();
 }
+document.getElementById('d-download').addEventListener('click',doDownload);
+document.getElementById('m-download').addEventListener('click',doDownload);
 
-// ─── Clear ────────────────────────────────────────────────────────────────────
-document.getElementById('clear-btn').addEventListener('click', () => {
-  state.images = [];
-  renderCollage();
+// ═══════════════════════════════════════════
+// RESIZE + INIT
+// ═══════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  if(window.innerWidth>768)renderDesktop();
+  else if(mStep===3)renderMPreview();
 });
-
-// ─── Download ────────────────────────────────────────────────────────────────
-document.getElementById('download-btn').addEventListener('click', async () => {
-  const wrapper = document.getElementById('collage-wrapper');
-  const { cw, ch } = getCanvasSize();
-  const scale = 2; // 2x for quality
-
-  const canvas = document.createElement('canvas');
-  canvas.width = cw * scale;
-  canvas.height = ch * scale;
-  const ctx = canvas.getContext('2d');
-
-  // Background
-  ctx.fillStyle = state.bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const layout = LAYOUTS[state.layout];
-  const gap = state.gap;
-  const radius = state.radius;
-
-  const drawPromises = layout.cells.map((cell, idx) => {
-    return new Promise(resolve => {
-      const imgSt = state.images[idx];
-      if (!imgSt) { resolve(); return; }
-
-      const x = (cell.x * cw + gap / 2) * scale;
-      const y = (cell.y * ch + gap / 2) * scale;
-      const w = (cell.w * cw - gap) * scale;
-      const h = (cell.h * ch - gap) * scale;
-
-      const img = new Image();
-      img.onload = () => {
-        ctx.save();
-        // Clip with rounded rect
-        ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(x, y, w, h, radius * scale);
-        } else {
-          ctx.rect(x, y, w, h);
-        }
-        ctx.clip();
-
-        // Draw with scale
-        const sc = imgSt.scale;
-        const drawW = w * sc;
-        const drawH = h * sc;
-        const ox = (w - drawW) / 2 + imgSt.offsetX * scale * sc;
-        const oy = (h - drawH) / 2 + imgSt.offsetY * scale * sc;
-
-        ctx.drawImage(img, x + ox, y + oy, drawW, drawH);
-        ctx.restore();
-        resolve();
-      };
-      img.src = imgSt.src;
-    });
-  });
-
-  await Promise.all(drawPromises);
-
-  const link = document.createElement('a');
-  link.download = 'collage.jpg';
-  link.href = canvas.toDataURL('image/jpeg', 0.92);
-  link.click();
-});
-
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
-renderCollage();
+renderDesktop();
 </script>
 </body>
 </html>
